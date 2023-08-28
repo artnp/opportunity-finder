@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Opportunity Finder</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+          .black-box {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  .flashing-bar {
+    width: 10px;
+    height: 15px;
+    background-color: white;
+	position: absolute;
+    animation: flashing 1.5s infinite;
+  }
+
+  @keyframes flashing {
+    0%, 49% {
+      opacity: 0;
+    }
+    50%, 100% {
+      opacity: 1;
+    }
+  }
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        .hold {
+            background-color: rgb(146, 146, 140);
+        }
+
+        /* Style for the "USE $" row */
+        .use-dollar {
+            font-weight: bold;
+        }
+
+        .use-dollar.red-bg {
+            background-color: red;
+            color: rgb(255, 255, 255);
+        }
+    </style>
+</head>
+<body>
+    <div class="black-box"><center>
+<div class="flashing-bar"></div> &nbsp;&nbsp; ค้นหาเหรียญคริปโตทั้งหมด >นับจากราคาตลาด >โดยจะใช้เงินทุนซื้อไม่เกิน20$ >เมื่อกลับจุดราคาสูงสุดเงินทุนจะมีราคา1,000$
+</center></div>
+    <table>
+        <thead>
+            <tr>
+                <th>COIN</th>
+                <th>ราคาตอนนี้</th>
+                <th>ราคาสูงสุด</th>
+                <th>ต้องถือเท่าไหร่</th>
+                <th class="use-dollar">ใช้เงินซื้อ$</th>
+            </tr>
+        </thead>
+        <tbody id="coinTableBody">
+        </tbody>
+    </table>
+    <script>
+        $(document).ready(function() {
+            const coingeckoAPIUrl = "https://api.coingecko.com/api/v3/coins/markets";
+
+            // Fetch the list of all cryptocurrencies on CoinGecko
+            $.get(`${coingeckoAPIUrl}?vs_currency=usd&order=market_cap_desc&per_page=2000&page=1`, function(data) {
+                const coinDataArray = data.map(function(coinData) {
+                    const coinName = coinData.id.toUpperCase();
+                    const currentPrice = coinData.current_price.toFixed(2);
+                    const allTimeHighPrice = coinData.ath.toFixed(2);
+                    const howMany = (1000 / allTimeHighPrice).toFixed(2);
+                    const useDollars = (howMany * currentPrice).toFixed(2);
+
+                    return {
+                        coinName,
+                        currentPrice,
+                        allTimeHighPrice,
+                        howMany,
+                        useDollars
+                    };
+                });
+
+                // Filter and sort the coinDataArray
+                const filteredAndSortedCoins = coinDataArray.filter(function(coinData) {
+                    return coinData.useDollars <= 20;
+                }).sort(function(a, b) {
+                    return a.useDollars - b.useDollars;
+                });
+
+                filteredAndSortedCoins.forEach(function(coinData) {
+                    const useDollars = parseFloat(coinData.useDollars);
+                    const rowClass = useDollars <= 20 ? "red-bg" : "";
+
+                    const row = `<tr class="${rowClass}">
+                                    <td>${coinData.coinName}</td>
+                                    <td>${coinData.currentPrice}</td>
+                                    <td>${coinData.allTimeHighPrice}</td>
+                                    <td class="hold"> ${coinData.howMany}</td>
+                                    <td class="use-dollar ${rowClass}">${coinData.useDollars}</td>
+                                </tr>`;
+                    $("#coinTableBody").append(row);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
